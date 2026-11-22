@@ -62,7 +62,7 @@ adb shell appops set aerial.pen.switcher SYSTEM_ALERT_WINDOW allow
 
 安装后打开「桌面切换器」：
 
-1. 勾选「开启悬浮窗」并授予悬浮窗权限；
+1. 授予悬浮窗权限（设置里找到「桌面切换器」开启，或使用上面的 appops 命令）；
 2. 需要手势时勾选「开启手势导航」，再点「开启无障碍服务」；
 3. 在系统无障碍列表里找到「桌面切换器」并开启。
 
