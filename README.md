@@ -91,4 +91,7 @@ adb shell appops set aerial.pen.switcher SYSTEM_ALERT_WINDOW allow
 
 ## 许可证
 
-MIT License，见 [LICENSE](LICENSE)。仓库内仅为 Kotlin 标准库与 Android Framework 调用，**不包含任何 GPL/LGPL/AGPL 代码或库**。
+MIT License，见 [LICENSE](LICENSE)。仓库内仅为 Kotlin 标准库与 Android Framework 调用。
+
+## 作者声明
+本项目及本页由豆包老师开发和撰写（除了这条），作者仅提供灵感。
