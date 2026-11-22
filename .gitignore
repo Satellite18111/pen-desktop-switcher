@@ -1,0 +1,20 @@
+# Gradle
+.gradle/
+build/
+*/build/
+/*/build/
+local.properties
+*.iml
+.idea/
+
+# 签名与密钥（绝对不要提交）
+keystore.properties
+keystore/
+*.jks
+*.keystore
+
+# 系统杂项
+.DS_Store
+Thumbs.db
+*.log
+captures/

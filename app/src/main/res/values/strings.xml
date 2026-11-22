@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">桌面切换器</string>
+    <string name="gesture_service_desc">左右边缘向内滑动返回，底部边缘向上滑动打开任务页面</string>
+</resources>
