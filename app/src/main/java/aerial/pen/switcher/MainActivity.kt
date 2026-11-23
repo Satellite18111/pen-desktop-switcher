@@ -19,6 +19,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
@@ -66,34 +67,34 @@ class MainActivity : Activity() {
 
         val column = LinearLayout(this)
         column.orientation = LinearLayout.VERTICAL
-        column.setPadding(dp(9), dp(7), dp(9), dp(8))
+        column.setPadding(dp(14), dp(14), dp(14), dp(20))
         scroller.addView(column, ViewGroup.LayoutParams(-1, -2))
 
-        column.addView(text("桌面切换器", 16f, 0xFFFFFFFF.toInt(), true))
-        column.addView(text("悬浮按钮 · 桌面互切", 10.5f, 0xFF93A6B8.toInt(), false))
+        column.addView(text("桌面切换器", 26f, 0xFFFFFFFF.toInt(), true))
+        column.addView(text("悬浮按钮 · 桌面互切", 14f, 0xFF93A6B8.toInt(), false))
 
-        statusView = text("", 10.5f, 0xFFB9C8D6.toInt(), false)
-        statusView.setPadding(0, dp(5), 0, dp(2))
+        statusView = text("", 14f, 0xFFB9C8D6.toInt(), false)
+        statusView.setPadding(0, dp(10), 0, dp(4))
         column.addView(statusView)
 
-        permissionButton = pill("授予悬浮窗权限", 0xFF2F6FE0.toInt(), dp(30))
+        permissionButton = pill("授予悬浮窗权限", 0xFF2F6FE0.toInt(), dp(54), 17f)
         permissionButton.setOnClickListener { openOverlaySettings() }
-        column.addView(permissionButton, LinearLayout.LayoutParams(-1, dp(30)).apply {
-            topMargin = dp(3)
+        column.addView(permissionButton, LinearLayout.LayoutParams(-1, dp(50)).apply {
+            topMargin = dp(6)
         })
 
-        toggle = pill("开启悬浮按钮", 0xFF2F6FE0.toInt(), dp(34))
+        toggle = pill("开启悬浮按钮", 0xFF2F6FE0.toInt(), dp(62), 19f)
         toggle.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         toggle.setOnClickListener { toggleService() }
-        column.addView(toggle, LinearLayout.LayoutParams(-1, dp(34)).apply {
-            topMargin = dp(6)
+        column.addView(toggle, LinearLayout.LayoutParams(-1, dp(58)).apply {
+            topMargin = dp(12)
         })
 
         column.addView(section("跳转时清理后台"))
         val killCheck = CheckBox(this)
         killCheck.text = "跳转后清理后台进程"
         killCheck.setTextColor(0xFFE7EEF7.toInt())
-        killCheck.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+        killCheck.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
         killCheck.isChecked = prefs.getBoolean(Prefs.KEY_KILL, false)
         killCheck.buttonTintList = ColorStateList.valueOf(0xFF2F6FE0.toInt())
         killCheck.setPadding(0, 0, 0, 0)
@@ -104,19 +105,19 @@ class MainActivity : Activity() {
             id = View.generateViewId()
             text = "仅桌面"
             setTextColor(0xFFE7EEF7.toInt())
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f)
             buttonTintList = ColorStateList.valueOf(0xFF2F6FE0.toInt())
-            setPadding(0, 0, dp(12), 0)
+            setPadding(0, 0, dp(16), 0)
         }
         val radioAll = RadioButton(this).apply {
             id = View.generateViewId()
             text = "全部后台"
             setTextColor(0xFFE7EEF7.toInt())
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f)
             buttonTintList = ColorStateList.valueOf(0xFF2F6FE0.toInt())
         }
-        killGroup.addView(radioDesktop, LinearLayout.LayoutParams(-2, dp(24)))
-        killGroup.addView(radioAll, LinearLayout.LayoutParams(-2, dp(24)))
+        killGroup.addView(radioDesktop, LinearLayout.LayoutParams(-2, dp(48)))
+        killGroup.addView(radioAll, LinearLayout.LayoutParams(-2, dp(48)))
 
         val mode = prefs.getInt(Prefs.KEY_KILL_MODE, Prefs.KILL_MODE_DESKTOP)
         killGroup.check(if (mode == Prefs.KILL_MODE_ALL) radioAll.id else radioDesktop.id)
@@ -135,8 +136,8 @@ class MainActivity : Activity() {
                 .apply()
         }
 
-        column.addView(killCheck, LinearLayout.LayoutParams(-1, dp(24)))
-        column.addView(killGroup, LinearLayout.LayoutParams(-1, dp(26)))
+        column.addView(killCheck, LinearLayout.LayoutParams(-1, dp(52)))
+        column.addView(killGroup, LinearLayout.LayoutParams(-1, dp(48)))
         column.addView(section("悬浮按钮位置"))
 
         val grid = LinearLayout(this)
@@ -149,8 +150,8 @@ class MainActivity : Activity() {
         )
         corners.forEachIndexed { index, item ->
             val button = cornerButton(item.first, item.second)
-            grid.addView(button, LinearLayout.LayoutParams(0, dp(28), 1f).apply {
-                if (index > 0) leftMargin = dp(5)
+            grid.addView(button, LinearLayout.LayoutParams(0, dp(46), 1f).apply {
+                if (index > 0) leftMargin = dp(6)
             })
         }
         column.addView(grid)
@@ -164,7 +165,7 @@ class MainActivity : Activity() {
         gestureCheck = CheckBox(this)
         gestureCheck.text = "开启手势导航"
         gestureCheck.setTextColor(0xFFE7EEF7.toInt())
-        gestureCheck.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+        gestureCheck.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
         gestureCheck.isChecked = prefs.getBoolean(Prefs.KEY_GESTURE, false)
         gestureCheck.buttonTintList = ColorStateList.valueOf(0xFF2F6FE0.toInt())
         gestureCheck.setPadding(0, 0, 0, 0)
@@ -177,25 +178,25 @@ class MainActivity : Activity() {
             syncGestureService()
             refreshGestureUi()
         }
-        column.addView(gestureCheck, LinearLayout.LayoutParams(-1, dp(24)))
+        column.addView(gestureCheck, LinearLayout.LayoutParams(-1, dp(52)))
 
-        gestureStatus = text("", 10f, 0xFF93A6B8.toInt(), false)
-        gestureStatus.setPadding(0, dp(1), 0, 0)
+        gestureStatus = text("", 14f, 0xFF93A6B8.toInt(), false)
+        gestureStatus.setPadding(0, dp(4), 0, 0)
         column.addView(gestureStatus)
 
-        gestureButton = pill("开启无障碍服务", 0xFF2F6FE0.toInt(), dp(30))
+        gestureButton = pill("开启无障碍服务", 0xFF2F6FE0.toInt(), dp(54), 17f)
         gestureButton.setOnClickListener { openAccessibilitySettings() }
-        column.addView(gestureButton, LinearLayout.LayoutParams(-1, dp(30)).apply {
-            topMargin = dp(3)
+        column.addView(gestureButton, LinearLayout.LayoutParams(-1, dp(50)).apply {
+            topMargin = dp(8)
         })
 
         column.addView(
             text(
                 "左右边缘向内滑动返回；底部边缘向上滑动打开任务页面。",
-                9f,
+                12.5f,
                 0xFF8FA2B4.toInt(),
                 false,
-            ).apply { setPadding(0, dp(3), 0, 0) },
+            ).apply { setPadding(0, dp(8), 0, 0) },
         )
 
         column.addView(section("可切换的桌面"))
@@ -207,17 +208,17 @@ class MainActivity : Activity() {
         val all = Desktops.load(this)
         val chosen = prefs.getStringSet(Prefs.KEY_TARGETS, null)
         if (all.isEmpty()) {
-            targets.addView(text("没有找到其他桌面", 10.5f, 0xFF93A6B8.toInt(), false))
+            targets.addView(text("没有找到其他桌面", 14f, 0xFF93A6B8.toInt(), false))
         }
         all.forEach { target ->
             val check = CheckBox(this)
             check.text = target.label
             check.setTextColor(0xFFE7EEF7.toInt())
-            check.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+            check.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
             check.isChecked = chosen == null || chosen.contains(target.key)
             check.tag = target.key
             check.buttonTintList = ColorStateList.valueOf(0xFF2F6FE0.toInt())
-            check.setPadding(0, dp(1), 0, dp(1))
+            check.setPadding(0, 0, 0, 0)
             check.setOnCheckedChangeListener { _, _ -> saveTargets() }
             check.setOnLongClickListener {
                 val custom = prefs.getStringSet(Prefs.KEY_EXTRA_TARGETS, emptySet()) ?: emptySet()
@@ -231,14 +232,13 @@ class MainActivity : Activity() {
                 }
                 true
             }
-            targets.addView(check, LinearLayout.LayoutParams(-1, dp(26)))
+            targets.addView(check, LinearLayout.LayoutParams(-1, dp(52)))
         }
 
-        val addTarget = pill("＋ 添加桌面应用", 0xFF16212C.toInt(), dp(30))
-        addTarget.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+        val addTarget = pill("＋ 添加桌面应用", 0xFF16212C.toInt(), dp(54), 16f)
         addTarget.setOnClickListener { showAddTargetDialog() }
-        targets.addView(addTarget, LinearLayout.LayoutParams(-1, dp(30)).apply {
-            topMargin = dp(4)
+        targets.addView(addTarget, LinearLayout.LayoutParams(-1, dp(54)).apply {
+            topMargin = dp(8)
         })
 
 
@@ -246,18 +246,17 @@ class MainActivity : Activity() {
         column.addView(
             text(
                 "点小球 → 点桌面图标选中 → 再点一次跳转；按住小球可拖动，松手自动贴边。长按小球或点面板右上角「设」可回到本页。",
-                9f,
+                12.5f,
                 0xFF8FA2B4.toInt(),
                 false,
-            ).apply { setPadding(0, dp(6), 0, 0) },
+            ).apply { setPadding(0, dp(12), 0, 0) },
         )
 
         setContentView(scroller)
     }
 
     private fun cornerButton(label: String, corner: Int): TextView {
-        val button = pill(label, 0xFF16212C.toInt(), dp(28))
-        button.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+        val button = pill(label, 0xFF16212C.toInt(), dp(52), 16f)
         button.tag = corner
         cornerButtons.add(button)
         button.setOnClickListener {
@@ -276,27 +275,25 @@ class MainActivity : Activity() {
         val row = LinearLayout(this)
         row.orientation = LinearLayout.HORIZONTAL
         row.gravity = Gravity.CENTER_VERTICAL
-        row.setPadding(0, dp(1), 0, dp(1))
+        row.setPadding(0, dp(3), 0, dp(3))
 
-        val name = text(title, 10.5f, 0xFFB9C8D6.toInt(), false)
+        val name = text(title, 16f, 0xFFB9C8D6.toInt(), false)
         name.gravity = Gravity.CENTER_VERTICAL
 
-        val minus = pill("－", 0xFF16212C.toInt(), dp(28))
-        minus.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+        val minus = pill("－", 0xFF16212C.toInt(), dp(56), 22f)
         minus.setOnClickListener { changeScale(key, -0.1f) }
 
-        val percent = text("", 11f, 0xFFE7EEF7.toInt(), true)
+        val percent = text("", 17.5f, 0xFFE7EEF7.toInt(), true)
         percent.gravity = Gravity.CENTER
         scaleLabels.add(key to percent)
 
-        val plus = pill("＋", 0xFF16212C.toInt(), dp(28))
-        plus.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+        val plus = pill("＋", 0xFF16212C.toInt(), dp(56), 22f)
         plus.setOnClickListener { changeScale(key, 0.1f) }
 
-        row.addView(name, LinearLayout.LayoutParams(dp(48), dp(28)))
-        row.addView(minus, LinearLayout.LayoutParams(dp(38), dp(28)))
-        row.addView(percent, LinearLayout.LayoutParams(0, dp(28), 1f))
-        row.addView(plus, LinearLayout.LayoutParams(dp(38), dp(28)))
+        row.addView(name, LinearLayout.LayoutParams(dp(84), dp(56)))
+        row.addView(minus, LinearLayout.LayoutParams(dp(56), dp(56)))
+        row.addView(percent, LinearLayout.LayoutParams(0, dp(56), 1f))
+        row.addView(plus, LinearLayout.LayoutParams(dp(56), dp(56)))
         return row
     }
 
@@ -351,7 +348,7 @@ class MainActivity : Activity() {
         val enabled = prefs.getBoolean(Prefs.KEY_ENABLED, false)
         toggle.text = if (enabled) "关闭悬浮按钮" else "开启悬浮按钮"
         toggle.background = GradientDrawable().apply {
-            cornerRadius = dp(12).toFloat()
+            cornerRadius = dp(16).toFloat()
             setColor(if (enabled) 0xFF8A3B3B.toInt() else 0xFF2F6FE0.toInt())
         }
         updateCornerStyles()
@@ -416,9 +413,26 @@ class MainActivity : Activity() {
         }
 
         val names = options.map { "${it.label}\n${it.pkg}" }
+        val adapter = object : ArrayAdapter<String>(
+            this,
+            android.R.layout.simple_list_item_1,
+            names,
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent)
+                (view as TextView).apply {
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                    setTextColor(0xFFE7EEF7.toInt())
+                    gravity = Gravity.CENTER_VERTICAL
+                    minHeight = dp(58)
+                    setPadding(dp(14), dp(8), dp(14), dp(8))
+                }
+                return view
+            }
+        }
         AlertDialog.Builder(this)
             .setTitle("添加为可切换桌面")
-            .setItems(names.toTypedArray()) { _, which ->
+            .setAdapter(adapter) { _, which ->
                 val option = options[which]
                 val set = prefs.getStringSet(Prefs.KEY_EXTRA_TARGETS, emptySet())?.toMutableSet()
                     ?: mutableSetOf()
@@ -506,8 +520,8 @@ class MainActivity : Activity() {
     }
 
     private fun section(title: String): TextView {
-        val view = text(title, 10.5f, 0xFFFFFFFF.toInt(), true)
-        view.setPadding(0, dp(8), 0, dp(3))
+        val view = text(title, 15f, 0xFFFFFFFF.toInt(), true)
+        view.setPadding(0, dp(16), 0, dp(6))
         return view
     }
 
@@ -520,15 +534,15 @@ class MainActivity : Activity() {
         return view
     }
 
-    private fun pill(label: String, color: Int, height: Int): TextView {
+    private fun pill(label: String, color: Int, height: Int, textSize: Float = 16f): TextView {
         val view = TextView(this)
         view.text = label
         view.setTextColor(Color.WHITE)
-        view.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+        view.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSize)
         view.gravity = Gravity.CENTER
         view.isClickable = true
         view.background = GradientDrawable().apply {
-            cornerRadius = dp(12).toFloat()
+            cornerRadius = dp(14).toFloat()
             setColor(color)
         }
         view.layoutParams = LinearLayout.LayoutParams(-1, height)
@@ -537,5 +551,6 @@ class MainActivity : Activity() {
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
+
 
 
