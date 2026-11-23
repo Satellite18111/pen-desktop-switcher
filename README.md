@@ -6,6 +6,7 @@
 
 ## 下载
 
+- 官网：https://satellite18111.github.io/pen-desktop-switcher/
 - Release：https://github.com/Satellite18111/pen-desktop-switcher/releases/latest
 - 源码克隆：
 
