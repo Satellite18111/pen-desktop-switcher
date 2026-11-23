@@ -36,17 +36,22 @@ object Desktops {
             out.add(DesktopTarget(pkg, name, label))
         }
 
-        // 非 HOME 桌面（例如 Aerial）也允许在切换器里出现
+        // 非 HOME 桌面（例如 PenDesk）也允许在切换器里出现
         val extras = listOf(
-            Triple("aerial.pen", "aerial.pen.MainActivity", "Aerial 桌面"),
+            "aerial.pen" to "aerial.pen.MainActivity",
         )
-        for ((pkg, activity, label) in extras) {
+        for ((pkg, activity) in extras) {
             if (pkg == context.packageName) continue
             val key = "$pkg/$activity"
             if (seen.contains(key)) continue
             try {
-                context.packageManager.getActivityInfo(ComponentName(pkg, activity), 0)
+                val info = context.packageManager.getActivityInfo(ComponentName(pkg, activity), 0)
                 if (context.packageManager.getLaunchIntentForPackage(pkg) != null) {
+                    val label = try {
+                        info.loadLabel(pm).toString()
+                    } catch (t: Throwable) {
+                        pkg
+                    }
                     out.add(DesktopTarget(pkg, activity, label))
                     seen.add(key)
                 }
@@ -68,8 +73,13 @@ object Desktops {
             if (pkg == context.packageName) continue
             if (seen.contains(component)) continue
             try {
-                context.packageManager.getActivityInfo(ComponentName(pkg, activity), 0)
-                out.add(DesktopTarget(pkg, activity, label))
+                val info = context.packageManager.getActivityInfo(ComponentName(pkg, activity), 0)
+                val resolvedLabel = try {
+                    info.loadLabel(pm).toString()
+                } catch (t: Throwable) {
+                    label
+                }
+                out.add(DesktopTarget(pkg, activity, resolvedLabel))
                 seen.add(component)
             } catch (t: Throwable) {
             }

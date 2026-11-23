@@ -77,7 +77,7 @@ adb shell appops set aerial.pen.switcher SYSTEM_ALERT_WINDOW allow
 
 ## 配合桌面
 
-- [aerial-pen](https://github.com/Satellite18111/aerial-pen)：仿 tvOS 风格的第三方桌面。
+- [PenDesk](https://github.com/Satellite18111/aerial-pen)：仿 tvOS 风格的第三方桌面。
 - 原厂学王桌面 `com.jxw.launcher` 也可作为跳转目标。
 
 ## 免责声明
