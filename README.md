@@ -1,17 +1,17 @@
-# pen-desktop-switcher
+# pendesktool
 
-给低分辨率安卓点读笔（测试机：A20Pro，Android 6.0 / API 23，258×960，density 160）做的桌面切换器。贴边悬浮球 + 图标面板，点一下选桌面，再点一次跳转。
+给低分辨率安卓点读笔（测试机：A20Pro，Android 6.0 / API 23，258×960，density 160）做的桌面切换工具。贴边悬浮球 + 图标面板点选跳转桌面，并内置控制中心：顶部下滑或面板「中」按钮呼出，调亮度、音量，开关 WiFi、蓝牙。
 
 ![切换器面板](docs/screenshots/switcher-panel.png)
 
 ## 下载
 
-- 官网：https://satellite18111.github.io/pen-desktop-switcher/
-- Release：https://github.com/Satellite18111/pen-desktop-switcher/releases/latest
+- 官网：https://satellite18111.github.io/pendesktool/
+- Release：https://github.com/Satellite18111/pendesktool/releases/latest
 - 源码克隆：
 
 ```bash
-git clone https://github.com/Satellite18111/pen-desktop-switcher.git
+git clone https://github.com/Satellite18111/pendesktool.git
 ```
 
 ## 功能
@@ -23,6 +23,7 @@ git clone https://github.com/Satellite18111/pen-desktop-switcher.git
 - 贴边手势条会自动避开悬浮球所在区域，球在哪都能优先点按和拖动。
 - 面板自适应横竖屏：竖屏 2 列大图标，横屏单行大卡片；桌面多时可在面板内滚动。
 - 面板底部音量行：`音量－ / 百分比 / 音量＋`，走 `STREAM_MUSIC`；横屏时并入标题栏。
+- 控制中心：屏幕上沿向下滑呼出（或点面板标题栏「中」按钮），含亮度滑块、音量滑块、WiFi 开关、蓝牙开关。亮度写系统设置需「修改系统设置」授权，WiFi / 蓝牙静默切换可能被定制 ROM 拒绝，失败时提示并引导到系统设置。
 - 跳转后可选择清理后台：关 / 仅桌面 / 全部后台（API 23 非 root 下为尽力清理，系统签名桌面杀不掉）。
 - `＋ 添加桌面应用`：从已安装应用里选任意 Activity 加入可切换列表，长按条目可移除。
 - 手势导航：左右边缘向内滑 = 返回，底部边缘向上滑 = 系统任务页面（需要开启无障碍服务）。
@@ -56,18 +57,18 @@ keyPassword=******
 ## 安装与授权
 
 ```bash
-adb push app-release.apk /data/local/tmp/switcher.apk
-adb shell pm install -r /data/local/tmp/switcher.apk
+adb push app-release.apk /data/local/tmp/pendesktool.apk
+adb shell pm install -r /data/local/tmp/pendesktool.apk
 
 # API 23 没有 pm grant，悬浮窗权限用 appops：
-adb shell appops set aerial.pen.switcher SYSTEM_ALERT_WINDOW allow
+adb shell appops set app.pendesk.tool SYSTEM_ALERT_WINDOW allow
 ```
 
-安装后打开「桌面切换器」：
+安装后打开「pendesktool」：
 
-1. 授予悬浮窗权限（设置里找到「桌面切换器」开启，或使用上面的 appops 命令）；
+1. 授予悬浮窗权限（设置里找到「pendesktool」开启，或使用上面的 appops 命令）；
 2. 需要手势时勾选「开启手势导航」，再点「开启无障碍服务」；
-3. 在系统无障碍列表里找到「桌面切换器」并开启。
+3. 在系统无障碍列表里找到「pendesktool」并开启。
 
 ## 手势说明
 

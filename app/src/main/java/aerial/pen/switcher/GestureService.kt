@@ -267,7 +267,7 @@ class GestureService : Service() {
 
     companion object {
         private const val CHANNEL = "gesture_nav"
-        const val ACTION_REFRESH = "aerial.pen.switcher.GESTURE_REFRESH"
+        const val ACTION_REFRESH = "app.pendesk.tool.GESTURE_REFRESH"
 
         @Volatile
         var paused = false

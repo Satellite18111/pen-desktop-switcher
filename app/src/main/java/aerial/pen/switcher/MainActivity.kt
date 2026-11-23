@@ -70,8 +70,8 @@ class MainActivity : Activity() {
         column.setPadding(dp(14), dp(14), dp(14), dp(20))
         scroller.addView(column, ViewGroup.LayoutParams(-1, -2))
 
-        column.addView(text("桌面切换器", 26f, 0xFFFFFFFF.toInt(), true))
-        column.addView(text("悬浮按钮 · 桌面互切", 14f, 0xFF93A6B8.toInt(), false))
+        column.addView(text("pendesktool", 26f, 0xFFFFFFFF.toInt(), true))
+        column.addView(text("悬浮按钮 · 桌面互切 · 控制中心", 14f, 0xFF93A6B8.toInt(), false))
 
         statusView = text("", 14f, 0xFFB9C8D6.toInt(), false)
         statusView.setPadding(0, dp(10), 0, dp(4))
@@ -172,7 +172,7 @@ class MainActivity : Activity() {
         gestureCheck.setOnCheckedChangeListener { _, checked ->
             prefs.edit().putBoolean(Prefs.KEY_GESTURE, checked).apply()
             if (checked && !accessibilityEnabled()) {
-                Toast.makeText(this, "请先在无障碍里开启“桌面切换器”", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "请先在无障碍里开启“pendesktool”", Toast.LENGTH_SHORT).show()
                 openAccessibilitySettings()
             }
             syncGestureService()
@@ -245,7 +245,7 @@ class MainActivity : Activity() {
 
         column.addView(
             text(
-                "点小球 → 点桌面图标选中 → 再点一次跳转；按住小球可拖动，松手自动贴边。长按小球或点面板右上角「设」可回到本页。",
+                "点小球 → 点桌面图标选中 → 再点一次跳转；按住小球可拖动，松手自动贴边。长按小球或点面板右上角「设」可回到本页。屏幕上沿向下滑呼出控制中心，可调亮度、音量，开关 WiFi、蓝牙；面板标题栏「中」也可打开。",
                 12.5f,
                 0xFF8FA2B4.toInt(),
                 false,
@@ -469,7 +469,7 @@ class MainActivity : Activity() {
     private fun openAccessibilitySettings() {
         try {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            Toast.makeText(this, "在列表里找到“桌面切换器”并开启", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "在列表里找到“pendesktool”并开启", Toast.LENGTH_SHORT).show()
         } catch (t: Throwable) {
             Toast.makeText(this, "打不开无障碍设置", Toast.LENGTH_SHORT).show()
         }

@@ -17,11 +17,11 @@ android {
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
-        applicationId = "aerial.pen.switcher"
+        applicationId = "app.pendesk.tool"
         minSdk = 21
         targetSdk = 28
-        versionCode = 11
-        versionName = "1.7.3"
+        versionCode = 12
+        versionName = "1.8.0"
     }
 
     signingConfigs {

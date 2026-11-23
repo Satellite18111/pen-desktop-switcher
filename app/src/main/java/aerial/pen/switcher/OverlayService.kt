@@ -61,6 +61,8 @@ class OverlayService : Service() {
     private var uiScale = 1.2f
     private var ballScale = 1.2f
     private val handler = Handler(Looper.getMainLooper())
+    private var cc: ControlCenterPanel? = null
+    private var topZone: View? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -81,6 +83,7 @@ class OverlayService : Service() {
         refreshMetrics()
         startForegroundCompat()
         showCollapsed()
+        addTopZone()
         alive = true
     }
 
@@ -92,6 +95,7 @@ class OverlayService : Service() {
         when (intent?.action) {
             ACTION_REPOSITION -> showCollapsed()
             ACTION_COLLAPSE -> showCollapsed()
+            ACTION_OPEN_CC -> openControlCenter()
         }
         return START_STICKY
     }
@@ -104,6 +108,15 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        cc?.dismiss()
+        cc = null
+        topZone?.let {
+            try {
+                wm.removeView(it)
+            } catch (t: Throwable) {
+            }
+        }
+        topZone = null
         root?.let {
             try {
                 wm.removeView(it)
@@ -128,7 +141,7 @@ class OverlayService : Service() {
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 "switcher",
-                "桌面切换器",
+                "pendesktool",
                 NotificationManager.IMPORTANCE_LOW,
             )
             manager.createNotificationChannel(channel)
@@ -142,7 +155,7 @@ class OverlayService : Service() {
         val pending = PendingIntent.getActivity(this, 0, launch, PendingIntent.FLAG_UPDATE_CURRENT)
         builder
             .setSmallIcon(android.R.drawable.ic_menu_sort_by_size)
-            .setContentTitle("桌面切换器")
+            .setContentTitle("pendesktool")
             .setContentText("悬浮按钮运行中")
             .setOngoing(true)
             .setContentIntent(pending)
@@ -311,13 +324,76 @@ class OverlayService : Service() {
 
     private fun openSwitcherSettings() {
         if (mode == MODE_PANEL) showCollapsed()
-        val intent = Intent()
-            .setClassName(packageName, "aerial.pen.switcher.MainActivity")
+        val intent = Intent(this, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try {
             startActivity(intent)
         } catch (t: Throwable) {
             Toast.makeText(this, "打不开设置页", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** 顶部下滑热区：贴屏幕上沿一条透明条，下滑呼出控制中心。 */
+    private fun addTopZone() {
+        if (!Settings.canDrawOverlays(this)) return
+        val zone = View(this)
+        zone.setBackgroundColor(0x01000000)
+        zone.isClickable = true
+        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            @Suppress("DEPRECATION")
+            WindowManager.LayoutParams.TYPE_PHONE
+        }
+        val p = WindowManager.LayoutParams(
+            screenW,
+            dp(16),
+            type,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = 0
+            y = 0
+        }
+        zone.setOnTouchListener(TopSwipeTouch())
+        try {
+            wm.addView(zone, p)
+            topZone = zone
+        } catch (t: Throwable) {
+        }
+    }
+
+    private fun openControlCenter() {
+        val panel = cc ?: ControlCenterPanel(this, wm).also { cc = it }
+        panel.show()
+    }
+
+    private inner class TopSwipeTouch : View.OnTouchListener {
+        private var downY = 0f
+        private var fired = false
+        private val threshold = dp(28)
+
+        override fun onTouch(v: View, event: MotionEvent): Boolean {
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downY = event.rawY
+                    fired = false
+                    return true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (fired) return true
+                    val dy = event.rawY - downY
+                    if (dy > threshold) {
+                        fired = true
+                        openControlCenter()
+                    }
+                    return true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> return true
+            }
+            return false
         }
     }
 
@@ -439,6 +515,11 @@ class OverlayService : Service() {
             })
         }
 
+        val ccBtn = headerButton("中", sp(11f)) { openControlCenter() }
+        header.addView(ccBtn, LinearLayout.LayoutParams(dp(30), dp(30)).apply {
+            rightMargin = dp(5)
+        })
+
         val settings = headerButton("设", sp(11f)) { openSwitcherSettings() }
         header.addView(settings, LinearLayout.LayoutParams(dp(30), dp(30)).apply {
             rightMargin = dp(5)
@@ -458,7 +539,7 @@ class OverlayService : Service() {
         tileViews.clear()
         if (items.isEmpty()) {
             val empty = TextView(this)
-            empty.text = "先去桌面切换器勾选桌面"
+            empty.text = "先去设置页勾选桌面"
             empty.setTextColor(0xFF9FB0C0.toInt())
             empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(11f))
             empty.gravity = Gravity.CENTER
@@ -756,8 +837,9 @@ class OverlayService : Service() {
     companion object {
         @Volatile
         var alive = false
-        const val ACTION_REPOSITION = "aerial.pen.switcher.REPOSITION"
-        const val ACTION_COLLAPSE = "aerial.pen.switcher.COLLAPSE"
+        const val ACTION_REPOSITION = "app.pendesk.tool.REPOSITION"
+        const val ACTION_COLLAPSE = "app.pendesk.tool.COLLAPSE"
+        const val ACTION_OPEN_CC = "app.pendesk.tool.OPEN_CC"
         private const val MODE_COLLAPSED = 0
         private const val MODE_PANEL = 1
     }
