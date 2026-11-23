@@ -20,8 +20,8 @@ android {
         applicationId = "aerial.pen.switcher"
         minSdk = 21
         targetSdk = 28
-        versionCode = 8
-        versionName = "1.7.0"
+        versionCode = 9
+        versionName = "1.7.1"
     }
 
     signingConfigs {

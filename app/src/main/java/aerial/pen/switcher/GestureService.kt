@@ -4,7 +4,9 @@ import android.app.Notification
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
@@ -19,6 +21,7 @@ import kotlin.math.abs
 class GestureService : Service() {
 
     private lateinit var wm: WindowManager
+    private lateinit var prefs: SharedPreferences
     private val strips = ArrayList<View>()
     private var screenW = 0
     private var screenH = 0
@@ -27,11 +30,16 @@ class GestureService : Service() {
     override fun onCreate() {
         super.onCreate()
         wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        prefs = getSharedPreferences(Prefs.NAME, MODE_PRIVATE)
+        running = true
         startForegroundCompat()
         rebuildStrips()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_REFRESH) rebuildStrips()
+        return START_STICKY
+    }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
@@ -46,6 +54,7 @@ class GestureService : Service() {
             }
         }
         strips.clear()
+        running = false
         super.onDestroy()
     }
 
@@ -65,13 +74,78 @@ class GestureService : Service() {
         screenH = dm.heightPixels
         val edge = dp(9)
         val bottom = dp(10)
+        val guard = dp(5)
+        val ball = ballBounds()
 
-        addStrip(0, 0, edge, screenH, Direction.RIGHT)
-        addStrip(screenW - edge, 0, edge, screenH, Direction.LEFT)
-        addStrip(0, screenH - bottom, screenW, bottom, Direction.UP)
+        // 左右边缘：球所在的竖条区间留空，保证球优先接收触摸
+        val leftBlocked = ball != null && ball.left < edge && ball.right > 0
+        val rightBlocked = ball != null && ball.right > screenW - edge && ball.left < screenW
+        val leftTop = if (leftBlocked) (ball!!.top - guard).coerceIn(0, screenH) else screenH
+        val leftBottom = if (leftBlocked) (ball!!.bottom + guard).coerceIn(0, screenH) else 0
+        addStrip(0, 0, edge, leftTop, Direction.RIGHT)
+        if (leftBlocked && leftBottom < screenH) {
+            addStrip(0, leftBottom, edge, screenH - leftBottom, Direction.RIGHT)
+        }
+
+        val rightTop = if (rightBlocked) (ball!!.top - guard).coerceIn(0, screenH) else screenH
+        val rightBottom = if (rightBlocked) (ball!!.bottom + guard).coerceIn(0, screenH) else 0
+        addStrip(screenW - edge, 0, edge, rightTop, Direction.LEFT)
+        if (rightBlocked && rightBottom < screenH) {
+            addStrip(screenW - edge, rightBottom, edge, screenH - rightBottom, Direction.LEFT)
+        }
+
+        // 底部边缘：球压到底部时，横向让出球所在区间
+        val bottomBlocked = ball != null && ball.bottom > screenH - bottom && ball.top < screenH
+        val bottomLeft = if (bottomBlocked) (ball!!.left - guard).coerceIn(0, screenW) else screenW
+        val bottomRight = if (bottomBlocked) (ball!!.right + guard).coerceIn(0, screenW) else screenW
+        addStrip(0, screenH - bottom, bottomLeft, bottom, Direction.UP)
+        if (bottomBlocked && bottomRight < screenW) {
+            addStrip(bottomRight, screenH - bottom, screenW - bottomRight, bottom, Direction.UP)
+        }
+
+        Log.d("GestureNav", "strips rebuilt, ball=$ball")
+    }
+
+    private fun ballBounds(): Rect? {
+        val dm = resources.displayMetrics
+        val density = dm.density
+        val scale = prefs.getFloat(
+            Prefs.KEY_SCALE_BALL,
+            prefs.getFloat(Prefs.KEY_SCALE, 1.2f),
+        ).coerceIn(0.8f, 2.0f)
+        val w = (26 * density * scale).toInt()
+        val h = (54 * density * scale).toInt()
+        val corner = prefs.getInt(Prefs.KEY_CORNER, Prefs.CORNER_BOTTOM_RIGHT)
+        val x: Int
+        val y: Int
+        when (corner) {
+            Prefs.CORNER_TOP_LEFT -> {
+                x = 0
+                y = 0
+            }
+            Prefs.CORNER_TOP_RIGHT -> {
+                x = screenW - w
+                y = 0
+            }
+            Prefs.CORNER_BOTTOM_LEFT -> {
+                x = 0
+                y = screenH - h
+            }
+            Prefs.CORNER_BOTTOM_RIGHT -> {
+                x = screenW - w
+                y = screenH - h
+            }
+            else -> {
+                x = prefs.getInt(Prefs.KEY_X, screenW - w)
+                y = prefs.getInt(Prefs.KEY_Y, screenH - h)
+            }
+        }
+        if (x < 0 || y < 0 || x > screenW || y > screenH) return null
+        return Rect(x, y, x + w, y + h)
     }
 
     private fun addStrip(x: Int, y: Int, w: Int, h: Int, direction: Direction) {
+        if (w <= 0 || h <= 0) return
         val view = View(this)
         view.setBackgroundColor(0x01000000)
         view.isClickable = true
@@ -193,9 +267,13 @@ class GestureService : Service() {
 
     companion object {
         private const val CHANNEL = "gesture_nav"
+        const val ACTION_REFRESH = "aerial.pen.switcher.GESTURE_REFRESH"
 
         @Volatile
         var paused = false
+
+        @Volatile
+        private var running = false
 
         fun start(context: Context) {
             context.startService(Intent(context, GestureService::class.java))
@@ -203,6 +281,17 @@ class GestureService : Service() {
 
         fun stop(context: Context) {
             context.stopService(Intent(context, GestureService::class.java))
+        }
+
+        /** 悬浮球移动或缩放后调用，让边缘触控条重新避开球。 */
+        fun refresh(context: Context) {
+            if (!running) return
+            try {
+                context.startService(
+                    Intent(context, GestureService::class.java).setAction(ACTION_REFRESH),
+                )
+            } catch (t: Throwable) {
+            }
         }
     }
 }

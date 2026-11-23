@@ -33,6 +33,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import kotlin.math.abs
@@ -156,6 +157,7 @@ class OverlayService : Service() {
         val p = createParams(ballWidth(), ballHeight())
         positionCollapsed(p)
         attach(buildHandle(), p)
+        GestureService.refresh(this)
     }
 
     private fun showPanel() {
@@ -165,14 +167,28 @@ class OverlayService : Service() {
         val anchorX = params?.x ?: (screenW - ballWidth())
         val anchorY = params?.y ?: (screenH - ballHeight())
         val items = loadTargets()
-        val columns = min(3, max(1, items.size))
+        // 258 宽的机器用 2 列，横屏大屏按可用宽度自动增加列数
+        val wide = screenW > screenH
+        panelW = min(
+            if (wide) dp(420) else dp(238),
+            screenW - dp(6),
+        ).coerceAtLeast(dp(120))
+        val columns = min(
+            max(1, items.size.coerceAtLeast(1)),
+            max(1, panelW / dp(100)),
+        )
         val rows = max(1, (items.size + columns - 1) / columns)
-        panelW = min(dp(188), screenW - dp(8))
-        panelH = min(dp(62) + rows * dp(56) + dp(28), screenH - dp(8))
+        val padV = dp(if (wide) 6 else 8)
+        val headerH = dp(if (wide) 34 else 30)
+        val rowH = dp(if (wide) 62 else 66)
+        val volumeH = if (wide) 0 else dp(36)
+        val hintH = dp(30)
+        val desiredH = padV * 2 + headerH + rows * rowH + volumeH + hintH
+        panelH = min(desiredH, screenH - dp(6))
         panelX = if (anchorX + ballWidth() / 2 >= screenW / 2) screenW - panelW - dp(2) else dp(2)
         panelY = clampY(anchorY + ballHeight() / 2 - panelH / 2, panelH)
         val p = createParams(screenW, screenH, modal = true)
-        attach(buildPanelOverlay(items, columns), p)
+        attach(buildPanelOverlay(items, columns, headerH, padV, rowH, wide), p)
     }
 
     private fun movePanel(left: Int, top: Int) {
@@ -196,6 +212,7 @@ class OverlayService : Service() {
             .putInt(Prefs.KEY_X, x)
             .putInt(Prefs.KEY_Y, y)
             .apply()
+        GestureService.refresh(this)
     }
 
     private fun loadTargets(): List<DesktopTarget> {
@@ -373,9 +390,17 @@ class OverlayService : Service() {
             .putInt(Prefs.KEY_X, p.x)
             .putInt(Prefs.KEY_Y, p.y)
             .apply()
+        GestureService.refresh(this)
     }
 
-    private fun buildPanelOverlay(items: List<DesktopTarget>, columns: Int): View {
+    private fun buildPanelOverlay(
+        items: List<DesktopTarget>,
+        columns: Int,
+        headerH: Int,
+        padV: Int,
+        rowH: Int,
+        wide: Boolean,
+    ): View {
         val container = FrameLayout(this)
         val scrim = View(this)
         scrim.isClickable = true
@@ -385,14 +410,15 @@ class OverlayService : Service() {
 
         val card = DragCardLayout(this)
         card.orientation = LinearLayout.VERTICAL
-        card.setPadding(dp(8), dp(7), dp(8), dp(7))
+        card.setPadding(dp(9), padV, dp(9), padV)
         card.background = GradientDrawable().apply {
-            cornerRadius = dp(13).toFloat()
+            cornerRadius = dp(14).toFloat()
             setColor(0xFF101A24.toInt())
             setStroke(dp(1), 0x66FFFFFF)
         }
         card.onDragMove = { left, top -> movePanel(left, top) }
         card.onDragEnd = { persistPanelPosition() }
+        card.dragZoneBottom = padV + headerH + dp(2)
         panelCard = card
 
         val header = LinearLayout(this)
@@ -402,73 +428,78 @@ class OverlayService : Service() {
         val title = TextView(this)
         title.text = "切换桌面"
         title.setTextColor(0xFFFFFFFF.toInt())
-        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(10.5f))
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(12.5f))
         title.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-        header.addView(title, LinearLayout.LayoutParams(0, dp(22), 1f))
+        header.addView(title, LinearLayout.LayoutParams(0, headerH, 1f))
 
-        val settings = TextView(this)
-        settings.text = "设"
-        settings.setTextColor(0xFF9FB0C0.toInt())
-        settings.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(9.5f))
-        settings.gravity = Gravity.CENTER
-        settings.isClickable = true
-        settings.setOnClickListener { openSwitcherSettings() }
-        header.addView(settings, LinearLayout.LayoutParams(dp(22), dp(22)))
+        if (wide) {
+            val volume = buildVolumeRow(compact = true)
+            header.addView(volume, LinearLayout.LayoutParams(dp(170), dp(32)).apply {
+                rightMargin = dp(6)
+            })
+        }
 
-        val close = TextView(this)
-        close.text = "×"
-        close.setTextColor(0xFF9FB0C0.toInt())
-        close.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(14f))
-        close.gravity = Gravity.CENTER
-        close.isClickable = true
-        close.setOnClickListener { showCollapsed() }
-        header.addView(close, LinearLayout.LayoutParams(dp(22), dp(22)))
-        card.addView(header, LinearLayout.LayoutParams(-1, dp(22)))
+        val settings = headerButton("设", sp(11f)) { openSwitcherSettings() }
+        header.addView(settings, LinearLayout.LayoutParams(dp(30), dp(30)).apply {
+            rightMargin = dp(5)
+        })
+
+        val close = headerButton("×", sp(18f)) { showCollapsed() }
+        header.addView(close, LinearLayout.LayoutParams(dp(30), dp(30)))
+        card.addView(header, LinearLayout.LayoutParams(-1, headerH))
+
+        val scroll = ScrollView(this)
+        scroll.isVerticalScrollBarEnabled = false
+        scroll.isFillViewport = true
+
+        val grid = LinearLayout(this)
+        grid.orientation = LinearLayout.VERTICAL
 
         tileViews.clear()
         if (items.isEmpty()) {
             val empty = TextView(this)
             empty.text = "先去桌面切换器勾选桌面"
             empty.setTextColor(0xFF9FB0C0.toInt())
-            empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(9.5f))
+            empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(11f))
             empty.gravity = Gravity.CENTER
-            card.addView(empty, LinearLayout.LayoutParams(-1, dp(46)))
+            grid.addView(empty, LinearLayout.LayoutParams(-1, dp(54)))
         } else {
-            val grid = LinearLayout(this)
-            grid.orientation = LinearLayout.VERTICAL
             items.chunked(columns).forEach { rowItems ->
                 val row = LinearLayout(this)
                 row.orientation = LinearLayout.HORIZONTAL
                 row.setPadding(0, dp(2), 0, dp(2))
                 rowItems.forEach { target ->
                     val tile = buildTile(target)
-                    row.addView(tile, LinearLayout.LayoutParams(0, dp(52), 1f).apply {
-                        leftMargin = dp(2)
-                        rightMargin = dp(2)
+                    row.addView(tile, LinearLayout.LayoutParams(0, rowH - dp(4), 1f).apply {
+                        leftMargin = dp(3)
+                        rightMargin = dp(3)
                     })
                     tileViews.add(tile to target)
                 }
                 for (i in rowItems.size until columns) {
                     val spacer = View(this)
-                    row.addView(spacer, LinearLayout.LayoutParams(0, dp(52), 1f))
+                    row.addView(spacer, LinearLayout.LayoutParams(0, rowH - dp(4), 1f))
                 }
-                grid.addView(row, LinearLayout.LayoutParams(-1, dp(56)))
+                grid.addView(row, LinearLayout.LayoutParams(-1, rowH))
             }
-            card.addView(grid, LinearLayout.LayoutParams(-1, -2))
         }
+        scroll.addView(grid, FrameLayout.LayoutParams(-1, -2))
+        card.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
-        card.addView(buildVolumeRow(), LinearLayout.LayoutParams(-1, dp(26)))
+        if (!wide) {
+            card.addView(buildVolumeRow(compact = false), LinearLayout.LayoutParams(-1, dp(36)))
+        }
 
         val hint = TextView(this)
         hint.text = "点图标选中，再点一次跳转"
         hint.setTextColor(0xFF9FB0C0.toInt())
-        hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(9.5f))
+        hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(10.5f))
         hint.gravity = Gravity.CENTER
         hint.isClickable = true
         hint.setBackgroundColor(Color.TRANSPARENT)
         hint.setOnClickListener { selected?.let { jump(it) } }
         hintView = hint
-        card.addView(hint, LinearLayout.LayoutParams(-1, dp(26)))
+        card.addView(hint, LinearLayout.LayoutParams(-1, dp(30)))
 
         val lp = FrameLayout.LayoutParams(panelW, panelH)
         lp.leftMargin = panelX
@@ -477,9 +508,26 @@ class OverlayService : Service() {
         return container
     }
 
+    private fun headerButton(label: String, size: Float, action: () -> Unit): TextView {
+        val button = TextView(this)
+        button.text = label
+        button.setTextColor(0xFFDCE6F2.toInt())
+        button.setTextSize(TypedValue.COMPLEX_UNIT_SP, size)
+        button.gravity = Gravity.CENTER
+        button.isClickable = true
+        button.background = GradientDrawable().apply {
+            cornerRadius = dp(8).toFloat()
+            setColor(0x1FFFFFFF)
+            setStroke(dp(1), 0x33FFFFFF)
+        }
+        button.setOnClickListener { action() }
+        return button
+    }
+
     private inner class DragCardLayout(context: Context) : LinearLayout(context) {
         var onDragMove: ((Int, Int) -> Unit)? = null
         var onDragEnd: (() -> Unit)? = null
+        var dragZoneBottom = 0
 
         private val slop = ViewConfiguration.get(context).scaledTouchSlop
         private var downX = 0f
@@ -487,12 +535,14 @@ class OverlayService : Service() {
         private var startLeft = 0
         private var startTop = 0
         private var dragging = false
+        private var inDragZone = false
 
         override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
             when (ev.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downX = ev.rawX
                     downY = ev.rawY
+                    inDragZone = ev.y <= dragZoneBottom
                     val lp = layoutParams as? MarginLayoutParams
                     startLeft = lp?.leftMargin ?: left
                     startTop = lp?.topMargin ?: top
@@ -500,7 +550,7 @@ class OverlayService : Service() {
                     return false
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    if (!dragging &&
+                    if (inDragZone && !dragging &&
                         (abs(ev.rawX - downX) > slop || abs(ev.rawY - downY) > slop)
                     ) {
                         dragging = true
@@ -535,7 +585,7 @@ class OverlayService : Service() {
         }
     }
 
-    private fun buildVolumeRow(): View {
+    private fun buildVolumeRow(compact: Boolean = false): View {
         val row = LinearLayout(this)
         row.orientation = LinearLayout.HORIZONTAL
         row.gravity = Gravity.CENTER_VERTICAL
@@ -544,16 +594,22 @@ class OverlayService : Service() {
         val down = volumeButton("音量－") { adjustVolume(-1) }
         val label = TextView(this)
         label.setTextColor(0xFFE7EEF7.toInt())
-        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(9.5f))
+        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(11f))
         label.gravity = Gravity.CENTER
         label.text = currentVolumeText()
         volLabel = label
 
         val up = volumeButton("音量＋") { adjustVolume(1) }
 
-        row.addView(down, LinearLayout.LayoutParams(0, dp(24), 1f).apply { rightMargin = dp(3) })
-        row.addView(label, LinearLayout.LayoutParams(dp(40), dp(24)))
-        row.addView(up, LinearLayout.LayoutParams(0, dp(24), 1f).apply { leftMargin = dp(3) })
+        if (compact) {
+            row.addView(down, LinearLayout.LayoutParams(0, dp(32), 1f).apply { rightMargin = dp(3) })
+            row.addView(label, LinearLayout.LayoutParams(dp(44), dp(32)))
+            row.addView(up, LinearLayout.LayoutParams(0, dp(32), 1f).apply { leftMargin = dp(3) })
+        } else {
+            row.addView(down, LinearLayout.LayoutParams(0, dp(32), 1f).apply { rightMargin = dp(4) })
+            row.addView(label, LinearLayout.LayoutParams(dp(52), dp(32)))
+            row.addView(up, LinearLayout.LayoutParams(0, dp(32), 1f).apply { leftMargin = dp(4) })
+        }
         return row
     }
 
@@ -561,11 +617,11 @@ class OverlayService : Service() {
         val button = TextView(this)
         button.text = label
         button.setTextColor(0xFFE7EEF7.toInt())
-        button.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(9.5f))
+        button.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(11f))
         button.gravity = Gravity.CENTER
         button.isClickable = true
         button.background = GradientDrawable().apply {
-            cornerRadius = dp(7).toFloat()
+            cornerRadius = dp(9).toFloat()
             setColor(0x1AFFFFFF)
             setStroke(dp(1), 0x26FFFFFF)
         }
@@ -603,16 +659,16 @@ class OverlayService : Service() {
             icon.setImageDrawable(packageManager.getApplicationIcon(target.pkg))
         } catch (t: Throwable) {
         }
-        tile.addView(icon, LinearLayout.LayoutParams(dp(28), dp(28)))
+        tile.addView(icon, LinearLayout.LayoutParams(dp(36), dp(36)))
 
         val label = TextView(this)
         label.text = target.label
         label.setTextColor(0xFFE7EEF7.toInt())
-        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(9f))
+        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp(10.5f))
         label.gravity = Gravity.CENTER
         label.isSingleLine = true
         label.ellipsize = TextUtils.TruncateAt.END
-        label.setPadding(dp(2), dp(3), dp(2), 0)
+        label.setPadding(dp(3), dp(4), dp(3), 0)
         tile.addView(label, LinearLayout.LayoutParams(-1, -2))
 
         tile.setOnClickListener {
